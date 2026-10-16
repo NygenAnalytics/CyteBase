@@ -78,8 +78,8 @@ test = [
     # The notebook progress test runs a kernel.
     "ipykernel>=7.3.0",
     "ipywidgets>=8",
-    "nbclient",
-    "nbformat",
+    "nbclient>=0.10",
+    "nbformat>=5.10",
 ]
 dev = [
     "ipython>=9.16.1",
@@ -92,8 +92,8 @@ docs = [
     "mystmd>=1.11.0",
     "jupytext>=1.19.6",
     "ipykernel>=7.3.0",
-    "nbclient",
-    "nbformat",
+    "nbclient>=0.10",
+    "nbformat>=5.10",
     "pyyaml",
     "myst-parser",
     "sphinx",
