@@ -2,6 +2,8 @@
 
 <p align="left">
   <a href="https://github.com/NygenAnalytics/CyteBase/actions/workflows/pytest.yml"><img src="https://github.com/NygenAnalytics/CyteBase/actions/workflows/pytest.yml/badge.svg" alt="Tests"></a>
+  <a href="https://codecov.io/gh/NygenAnalytics/CyteBase"><img src="https://codecov.io/gh/NygenAnalytics/CyteBase/graph/badge.svg" alt="Coverage"></a>
+  <a href="https://docs.nygen.io/CyteBase/"><img src="https://img.shields.io/github/actions/workflow/status/NygenAnalytics/CyteBase/pages.yml?label=Documentation" alt="Documentation"></a>
   <a href="https://pypi.org/project/cytebase"><img src="https://img.shields.io/pypi/v/cytebase.svg?color=4c72b0" alt="PyPI"></a>
   <a href="https://pypi.org/project/cytebase"><img src="https://img.shields.io/badge/python-3.13%20%7C%203.14%20%7C%203.15-4c72b0.svg" alt="Python 3.13, 3.14, and 3.15"></a>
 </p>
