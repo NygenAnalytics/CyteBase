@@ -1,0 +1,134 @@
+name: Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/workflows/docs.yml"
+      - ".github/workflows/pages.yml"
+      - ".gitignore"
+      - "AGENTS.md"
+      - "LICENSE"
+      - "README.md"
+      - "docs/**"
+      - "skills/**"
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/workflows/docs.yml"
+      - ".github/workflows/pages.yml"
+      - ".gitignore"
+      - "AGENTS.md"
+      - "LICENSE"
+      - "README.md"
+      - "docs/**"
+      - "skills/**"
+
+jobs:
+  quality:
+    runs-on: ubuntu-26.04
+    env:
+      HNSWLIB_NO_NATIVE: "1"
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: ${{ github.sha }}
+        fetch-depth: 0
+    - name: Install system build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential
+    - name: Install uv
+      uses: astral-sh/setup-uv@v9.0.0
+      with:
+        python-version: "3.13"
+    - name: Install dependencies
+      run: uv sync --locked
+    - name: Lint and check formatting
+      run: |
+        uv run ruff check cytebase tests docs
+        uv run ruff format --check cytebase tests docs
+    - name: Type check
+      run: uv run mypy cytebase
+
+  wheel:
+    runs-on: ubuntu-26.04
+    env:
+      HNSWLIB_NO_NATIVE: "1"
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: ${{ github.sha }}
+        fetch-depth: 0
+    - name: Install system build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential pkg-config libhdf5-dev libfftw3-dev libmetis-dev
+    - name: Install uv
+      uses: astral-sh/setup-uv@v9.0.0
+      with:
+        python-version: "3.14"
+    - name: Build and smoke-test wheel
+      run: |
+        uv build
+        uv run --no-project python tests/smoke_wheel.py dist/*.whl
+
+  test:
+    name: test (${{ matrix.python-version }}, ${{ matrix.resolution }})
+    runs-on: ubuntu-26.04
+    env:
+      HNSWLIB_NO_NATIVE: "1"
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.13", "3.14", "3.15"]
+        # lowest-direct installs the oldest CyteArc that pyproject.toml admits.
+        resolution: [locked, lowest-direct]
+        exclude:
+          - python-version: "3.14"
+            resolution: lowest-direct
+          - python-version: "3.15"
+            resolution: lowest-direct
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: ${{ github.sha }}
+        fetch-depth: 0
+    - name: Install system build dependencies
+      # h5py publishes no Python 3.15 wheels yet, so that row compiles it
+      # against HDF5.
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential pkg-config libhdf5-dev libfftw3-dev libmetis-dev
+    - name: Install uv
+      uses: astral-sh/setup-uv@v9.0.0
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies (locked)
+      if: matrix.resolution == 'locked'
+      run: uv sync --locked
+    - name: Install dependencies (lowest-direct)
+      if: matrix.resolution == 'lowest-direct'
+      run: |
+        uv venv --python "${{ matrix.python-version }}"
+        uv pip install --resolution lowest-direct -e . --group pipeline --group test
+    - name: Test with pytest (parallel)
+      run: |
+        pytest_args=(-n logical --durations=25)
+        if [ "${{ matrix.resolution }}" = "locked" ] && [ "${{ matrix.python-version }}" = "3.14" ]; then
+          pytest_args+=(--cov=cytebase --cov-report=xml)
+        fi
+        uv run --no-sync pytest "${pytest_args[@]}"
+    - name: Upload coverage to Codecov
+      if: matrix.resolution == 'locked' && matrix.python-version == '3.14'
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: coverage.xml
+        disable_search: true
+        fail_ci_if_error: true

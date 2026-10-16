@@ -1,0 +1,202 @@
+name: Publish CyteBase build to PyPI
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+# One publication per tag at a time; a second run waits instead of racing.
+concurrency:
+  group: publish-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+# The prior test run, documentation build, and published files must all come
+# from github.sha, the commit named by the release tag when it was published.
+jobs:
+  verify:
+    name: Require successful CI for the release commit
+    runs-on: ubuntu-26.04
+    permissions:
+      actions: read
+    steps:
+    - name: Check the latest Tests run for the release commit
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # Pull request runs can test a merge commit instead of their head SHA.
+        run="$(gh api --method GET \
+          "repos/${GITHUB_REPOSITORY}/actions/workflows/pytest.yml/runs" \
+          -f head_sha="$GITHUB_SHA" -f per_page=100 --paginate \
+          --jq '.workflow_runs[] | select(.event == "push" or .event == "workflow_dispatch")
+            | [.run_number, .status, (.conclusion | tostring), .html_url] | @tsv' \
+          | sort -nr | sed -n '1p')"
+        if [[ -z "$run" ]]; then
+          echo "::error::No push or manual Tests run exists for ${GITHUB_SHA}. Run Tests for this commit, then rerun the release workflow."
+          exit 1
+        fi
+        IFS=$'\t' read -r run_number run_status conclusion run_url <<< "$run"
+        echo "Tests run ${run_number} for ${GITHUB_SHA}: ${run_status} / ${conclusion} (${run_url})"
+        if [[ "$run_status" != "completed" || "$conclusion" != "success" ]]; then
+          echo "::error::The latest Tests run for ${GITHUB_SHA} must complete successfully before publishing: ${run_url}"
+          exit 1
+        fi
+
+  docs:
+    name: Verify the documentation
+    uses: ./.github/workflows/docs.yml
+    with:
+      ref: ${{ github.sha }}
+
+  build:
+    name: Build distribution
+    runs-on: ubuntu-26.04
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: ${{ github.sha }}
+        fetch-depth: 0
+    - name: Require the release tag to name the verified commit
+      env:
+        RELEASE_TAG: ${{ github.event.release.tag_name }}
+      run: |
+        tagged="$(git rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}")"
+        echo "Release tag ${RELEASE_TAG} names ${tagged}; the workflow verifies ${GITHUB_SHA}"
+        if [[ "$tagged" != "$GITHUB_SHA" ]]; then
+          echo "::error::Release tag ${RELEASE_TAG} names ${tagged}, not the verified commit ${GITHUB_SHA}"
+          exit 1
+        fi
+    - name: Install uv
+      uses: astral-sh/setup-uv@v9.0.0
+      with:
+        python-version: "3.14"
+        version: "0.13.0"
+    - name: Require clean git state before build
+      run: |
+        echo "::group::git status --porcelain=v1"
+        status="$(git status --porcelain=v1)"
+        if [[ -z "$status" ]]; then echo "(clean)"; else printf '%s\n' "$status"; fi
+        echo "::endgroup::"
+        echo "::group::git describe"
+        git describe --tags --dirty --long
+        echo "::endgroup::"
+        echo "::group::git diff --stat"
+        diffstat="$(git diff --stat)"
+        if [[ -z "$diffstat" ]]; then echo "(no unstaged diff)"; else printf '%s\n' "$diffstat"; fi
+        echo "::endgroup::"
+        if [[ -n "$status" ]]; then
+          echo "::error::Release checkout is not clean before the build"
+          exit 1
+        fi
+    - name: Build a pure-Python wheel and a source tarball
+      env:
+        SETUPTOOLS_SCM_DEBUG: "true"
+        SETUPTOOLS_SCM_OVERRIDES_FOR_CYTEBASE: >-
+          {local_scheme = "no-local-version-strict"}
+      run: uv build --clear --build-constraints .github/build-constraints.txt
+    - name: Require clean git state after build
+      if: always()
+      run: |
+        echo "::group::git status --porcelain=v1"
+        status="$(git status --porcelain=v1)"
+        if [[ -z "$status" ]]; then echo "(clean)"; else printf '%s\n' "$status"; fi
+        echo "::endgroup::"
+        echo "::group::git describe"
+        git describe --tags --dirty --long
+        echo "::endgroup::"
+        echo "::group::git diff --stat"
+        diffstat="$(git diff --stat)"
+        if [[ -z "$diffstat" ]]; then echo "(no unstaged diff)"; else printf '%s\n' "$diffstat"; fi
+        echo "::endgroup::"
+        echo "::group::generated version file"
+        ls -l cytebase/_version.py || echo "cytebase/_version.py not present"
+        git check-ignore -v cytebase/_version.py || echo "cytebase/_version.py is not gitignored"
+        echo "::endgroup::"
+        if [[ -n "$status" ]]; then
+          echo "::error::Release checkout is not clean after the build"
+          exit 1
+        fi
+    - name: Validate release artifact metadata
+      env:
+        RELEASE_TAG: ${{ github.event.release.tag_name }}
+      run: >-
+        uv run --no-project --with packaging==26.3
+        python tests/validate_release_artifacts.py
+        --release-tag "$RELEASE_TAG"
+        --distribution cytebase
+        dist/*.whl dist/*.tar.gz
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v7
+      with:
+        name: python-package-distributions
+        path: dist/
+        if-no-files-found: error
+
+  smoke:
+    name: Smoke-test wheel (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    needs:
+      - build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-26.04]
+        python-version: ["3.13", "3.14", "3.15"]
+        include:
+          - os: windows-2025
+            python-version: "3.13"
+    defaults:
+      run:
+        # Bash expands the wheel glob on every runner, Windows included.
+        shell: bash
+    env:
+      HNSWLIB_NO_NATIVE: "1"
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: ${{ github.sha }}
+    - name: Install system build dependencies
+      # h5py and sgtsnepi publish no Python 3.15 wheels yet, so that row
+      # compiles them against HDF5, FFTW, and METIS.
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential pkg-config libhdf5-dev libfftw3-dev libmetis-dev
+    - name: Install uv
+      uses: astral-sh/setup-uv@v9.0.0
+      with:
+        python-version: ${{ matrix.python-version }}
+        version: "0.13.0"
+    - name: Download the distribution packages
+      uses: actions/download-artifact@v8
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Install the wheel in a clean environment and check its contents
+      run: uv run --no-project python tests/smoke_wheel.py dist/*.whl
+
+  publish-to-pypi:
+    name: Publish to PyPI
+    needs:
+      - verify
+      - docs
+      - build
+      - smoke
+    runs-on: ubuntu-26.04
+    environment:
+      name: pypi
+      url: https://pypi.org/p/cytebase
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v8
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

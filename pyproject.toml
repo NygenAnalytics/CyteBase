@@ -1,0 +1,181 @@
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm>=8", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cytebase"
+dynamic = ["version"]
+description = "Search a catalog of public single-cell datasets and open them as cloud-hosted CyteArc DataStores"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.13"
+license = "BSD-3-Clause"
+authors = [
+    {name = "Parashar Dhapola", email = "parashar.dhapola@gmail.com"},
+]
+keywords = [
+    "single-cell",
+    "scRNA-seq",
+    "CELLxGENE",
+    "catalog",
+    "CyteArc",
+    "Zarr",
+    "Hugging Face",
+]
+classifiers = [
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+]
+dependencies = [
+    "cytearc>=1.1.0,<2",
+    "duckdb>=1.5.5",
+    "httpx>=0.28.1",
+    "httpx2>=2.13.1",
+    "huggingface-hub>=2.0.0",
+    "numpy>=2.1",
+    "pandas>=2.2.3",
+    # DuckDB needs pytz to return TIMESTAMPTZ values as Python datetimes.
+    "pytz>=2026.3.post1",
+    "zarr>=3.4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/NygenAnalytics/CyteBase"
+Documentation = "https://docs.nygen.io/CyteBase/"
+Issues = "https://github.com/NygenAnalytics/CyteBase/issues"
+
+[tool.setuptools]
+include-package-data = false
+
+# The Modal build pipeline in cytebase.pipeline runs from a checkout and is not
+# part of the published wheel.
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cytebase", "cytebase.*"]
+exclude = ["cytebase.pipeline", "cytebase.pipeline.*"]
+
+[tool.setuptools_scm]
+version_file = "cytebase/_version.py"
+
+[dependency-groups]
+# Modal refuses to import on Python 3.15, so this group omits it there and the
+# tests that need it skip.
+pipeline = [
+    "modal>=1.5.2; python_version < '3.15'",
+    "fastapi>=0.141.1",
+    "natsort>=8.4.0",
+    "pydantic>=2.13.4",
+]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4",
+    "pytest-xdist>=3",
+    # The end-to-end test plots a published dataset through CyteArc.
+    "matplotlib>=3.9.2",
+    "seaborn>=0.13",
+    # The notebook progress test runs a kernel.
+    "ipykernel>=7.3.0",
+    "ipywidgets>=8",
+    "nbclient",
+    "nbformat",
+]
+dev = [
+    "ipython>=9.16.1",
+    "mypy>=2.1.0",
+    "ruff>=0.15.20",
+]
+# Builds the MyST site and the Sphinx API reference, and runs the documentation
+# notebooks, which plot through CyteArc.
+docs = [
+    "mystmd>=1.11.0",
+    "jupytext>=1.19.6",
+    "ipykernel>=7.3.0",
+    "nbclient",
+    "nbformat",
+    "pyyaml",
+    "myst-parser",
+    "sphinx",
+    "sphinx_autodoc_typehints",
+    "sphinx-book-theme",
+    "sphinx-copybutton",
+    # The tutorials' documented environment: CyteArc's plotting and notebook
+    # dependencies, including the ipywidgets that DuckDB needs in Jupyter.
+    "cytearc[extra]",
+]
+# Modal refuses to import on Python 3.15, so this group omits it there and the
+# tests that need it skip.
+docs-modal = [
+    "modal>=1.5.2; python_version < '3.15'",
+]
+
+[tool.uv]
+default-groups = ["dev", "pipeline", "test"]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { git = { commit = true, tags = true } },
+]
+# CyteArc's hnswlib dependency is built for a portable CPU target, as in CyteArc.
+no-binary-package = ["hnswlib"]
+extra-build-variables = { hnswlib = { HNSWLIB_NO_NATIVE = "1" } }
+
+[tool.uv.pip]
+no-binary = ["hnswlib"]
+extra-build-variables = { hnswlib = { HNSWLIB_NO_NATIVE = "1" } }
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -v -n logical --dist loadfile"
+markers = [
+    "integration: live network tests",
+]
+testpaths = [
+    "tests",
+]
+
+[tool.coverage.run]
+source = ["cytebase"]
+omit = ["cytebase/_version.py"]
+parallel = true
+patch = ["subprocess"]
+# sys.monitoring measures the same lines with less overhead than the C tracer
+# on Python 3.13; coverage already uses it on Python 3.14 and newer.
+core = "sysmon"
+
+[tool.ruff]
+# Notebook code is fingerprinted by its saved execution, so formatting it would
+# force a re-execution; CyteArc leaves its documentation notebooks unformatted too.
+exclude = [
+    ".git",
+    ".venv",
+    "*.ipynb",
+    "docs/build",
+    "cytebase/_version.py",
+]
+
+# Keep the same rule set as CyteArc.
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.mypy]
+strict = false
+
+python_version = "3.13"
+exclude = ["^docs/", "^cytebase/_version\\.py$"]
+
+disable_error_code = ["import-untyped"]
+
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+check_untyped_defs = true
+disallow_untyped_calls = true
+no_implicit_optional = true
+
+warn_return_any = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = false
+
+ignore_missing_imports = false

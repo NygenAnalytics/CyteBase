@@ -1,0 +1,51 @@
+version: 1
+project:
+  title: CyteBase
+  description: Search a catalog of public single-cell datasets and open them as cloud-hosted
+    CyteArc DataStores.
+  github: https://github.com/NygenAnalytics/CyteBase
+  plugins:
+  - type: executable
+    path: ../render_outputs.py
+  exclude:
+  - reference/api/**
+  static_files:
+  - llms.txt
+  - ../build/api
+  toc:
+  - file: index.md
+  - title: Getting started
+    children:
+    - file: installation.md
+      title: Installation
+    - file: tutorials/cytebase.ipynb
+      title: Explore CyteBase
+    - file: analyze_with_cytearc.md
+      title: Analyze with CyteArc
+  - title: Case studies
+    children:
+    - file: tutorials/cytebase_covid19.ipynb
+      title: COVID-19 blood
+    - url: https://docs.nygen.io/CyteArc/tutorials/composite-datasets
+      title: Joint reanalysis in CyteArc
+  - title: Reference
+    children:
+    - title: API reference
+      url: /api/index.html
+      open_in_same_tab: true
+    - url: https://docs.nygen.io/CyteArc/
+      title: CyteArc documentation
+    - url: https://github.com/NygenAnalytics/CyteBase/issues
+      title: Report a bug
+  - title: Developers
+    children:
+    - file: developers/build_pipeline.md
+      title: Build pipeline
+site:
+  template: book-theme
+  parts:
+    primary_sidebar_footer: <!-- No sidebar footer. -->
+  options:
+    folders: true
+    logo_text: CyteBase
+    hide_authors: true

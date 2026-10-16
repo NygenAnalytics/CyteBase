@@ -1,0 +1,24 @@
+# CyteBase
+
+> Search a catalog of public single-cell datasets and open them as cloud-hosted CyteArc DataStores. This documentation is published from the master branch and covers the CyteBase SDK, its public releases, and the operator-only build pipeline.
+
+- [Home](./): what the catalog contains and a first example
+
+## Getting started
+
+- [Installation](installation/): Python requirements, plotting dependencies, releases and buckets, credentials, and network access
+- [Explore CyteBase](tutorials/cytebase/): search the catalog, open a published dataset remotely, read cell annotations, plot the imported UMAP and gene expression, and query the catalog with SQL
+- [Analyze with CyteArc](analyze-with-cytearc/): mount a small dataset as a writable CyteArc store with remote counts and run CyteArc's RNA pipeline on it
+
+## Case studies
+
+- [COVID-19 blood](tutorials/cytebase-covid19/): compare COVID-19 and healthy donors using metadata, the published UMAP, and donor-level gene summaries
+
+## API reference
+
+- [API overview](api/index.html): exact public signatures and result contracts
+- [CyteBase API](api/cytebase.html): releases, catalog queries, metadata-only DatasetEntry objects, remote DataStore access, writable mounts with remote counts, imported embedding helpers, and result tables
+
+## Developers
+
+- [Build pipeline](developers/build-pipeline/): deploy and operate the Modal pipeline that ingests CELLxGENE datasets and builds CyteBase catalogs

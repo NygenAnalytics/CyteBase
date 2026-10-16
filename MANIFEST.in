@@ -1,0 +1,10 @@
+recursive-exclude * __pycache__
+recursive-exclude * *.pyc
+recursive-exclude * *.pyo
+exclude .gitignore
+prune docs
+prune tests
+prune skills
+prune .github
+prune cytebase/pipeline
+include README.md
