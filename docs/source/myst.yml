@@ -1,6 +1,7 @@
 version: 1
 project:
   title: CyteBase
+  short_title: Overview
   description: Search a catalog of public single-cell datasets and open them as cloud-hosted
     CyteArc DataStores.
   github: https://github.com/NygenAnalytics/CyteBase
@@ -42,10 +43,16 @@ project:
     - file: developers/build_pipeline.md
       title: Build pipeline
 site:
-  template: book-theme
+  template: https://github.com/myst-templates/book-theme/archive/23f2df5493e23dfb1d9433c8aa64c87beb4232a3.zip
   parts:
     primary_sidebar_footer: <!-- No sidebar footer. -->
+    navbar_end: '<a class="docs-home-link" href="https://docs.nygen.io/"><img class="brand-symbol" src="https://docs.nygen.io/assets/brand/logo/nygen-symbol.svg" alt="Nygen documentation home" width="32" height="32"></a>'
   options:
     folders: true
+    style: https://docs.nygen.io/assets/brand/myst.css
+    favicon: https://docs.nygen.io/assets/brand/logo/cytebase.ico
+    logo: https://docs.nygen.io/assets/brand/logo/cytebase.svg
+    logo_dark: https://docs.nygen.io/assets/brand/logo/cytebase.svg
+    logo_alt: CyteBase
     logo_text: CyteBase
     hide_authors: true

@@ -25,9 +25,13 @@ pygments_style = "sphinx"
 language = "en"
 
 html_theme = "sphinx_book_theme"
+html_css_files = ["https://docs.nygen.io/assets/brand/docs.css"]
+html_logo = "https://docs.nygen.io/assets/brand/logo/cytebase.svg"
+html_favicon = "https://docs.nygen.io/assets/brand/logo/cytebase.ico"
 html_title = "CyteBase API reference"
 html_baseurl = "https://docs.nygen.io/CyteBase/api/"
 html_theme_options = {
+    "logo": {"text": "CyteBase", "alt_text": "CyteBase"},
     "repository_url": "https://github.com/NygenAnalytics/CyteBase",
     "path_to_docs": "docs/source/reference/api",
     "use_repository_button": True,
