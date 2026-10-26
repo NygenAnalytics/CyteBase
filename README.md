@@ -1,4 +1,4 @@
-# CyteBase
+<h1><img src="https://docs.nygen.io/assets/brand/logo/cytebase-dark.png" alt="" width="96" align="right"> CyteBase</h1>
 
 <p align="left">
   <a href="https://github.com/NygenAnalytics/CyteBase/actions/workflows/pytest.yml"><img src="https://github.com/NygenAnalytics/CyteBase/actions/workflows/pytest.yml/badge.svg" alt="Tests"></a>
