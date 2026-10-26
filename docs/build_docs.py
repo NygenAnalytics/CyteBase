@@ -622,7 +622,9 @@ def prepare_site(*, preview: bool = False) -> Path:
 
 
 def link_shared_brand_assets(html: Path) -> None:
-    source_options = yaml.safe_load((SOURCE / "myst.yml").read_text())["site"]["options"]
+    source_options = yaml.safe_load((SOURCE / "myst.yml").read_text())["site"][
+        "options"
+    ]
     config = json.loads((html / "config.json").read_text())
     urls = {
         config["options"][key]: source_options[key]
@@ -660,7 +662,7 @@ def link_shared_brand_assets(html: Path) -> None:
         ("favicon.ico", source_options["favicon"]),
         ("myst-theme.css", source_options["style"]),
     ):
-        pattern = r'href:`\$\{[\w$]+\|\|""\}/' + re.escape(name) + r'`'
+        pattern = r'href:`\$\{[\w$]+\|\|""\}/' + re.escape(name) + r"`"
         contents, count = re.subn(pattern, f"href:{json.dumps(public)}", contents)
         if count != 1:
             raise ValueError(f"Expected one {name} link in {roots[0]}")
