@@ -132,6 +132,7 @@ def test_navigation_publishes_every_page() -> None:
         "open_in_same_tab": True,
     } in sections["Reference"]
     assert "llms.txt" in project["static_files"]
+    assert "../build/api" not in project["static_files"]
     assert "reference/api/**" in project["exclude"]
 
     published = _toc_files(toctree)
