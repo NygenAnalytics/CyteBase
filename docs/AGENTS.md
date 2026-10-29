@@ -4,7 +4,6 @@ These instructions cover documentation sources, notebook execution, and site bui
 
 - Author executable pages as tracked `.ipynb` files in `docs/source/`. Each notebook is the page's sole source and contains its prose, code, outputs, and execution metadata.
 - Keep prose guides and API references in Markdown.
-- Explain each logical step in notebook code with a comment. Put comments on their own lines, with a blank line before each comment unless it starts the code cell.
 - MyST builds guides and tutorials. Sphinx builds only `docs/source/reference/api/`.
 - Import the SDK as `import cytebase` or `from cytebase import ...`, and use `cytebase.*` autodoc targets. Never use `cytearc.cytebase`: CyteArc 1.1 ships an earlier copy of the SDK under that name, so code using it silently runs different code.
 - Link CyteArc pages with absolute `https://docs.nygen.io/CyteArc/...` URLs. Relative links must resolve to a page in `docs/source/`.
