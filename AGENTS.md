@@ -42,15 +42,8 @@ These instructions apply to the whole repository.
 
 ## Source and conventions
 
-- Python 3.13 or newer is required. Use `uv` for every Python command and dependency change.
-- Preserve unrelated working-tree changes. Trace callers and tests before changing a public
-  function or a persisted record.
-- Use built-in generics and `X | None`. Do not add `typing.List`, `typing.Optional`, or
-  `from __future__ import annotations`.
+- Python 3.13 or newer is required.
 - Pydantic model attributes use camel case.
-- Do not add implicit compatibility branches, ad hoc schema versions, or silent migrations.
-- Do not commit credentials, Modal secrets or tokens, private bucket names, or local endpoints.
-- Avoid em dashes in public prose, prompts, docstrings, and comments.
 
 ## Environment and checks
 
@@ -72,8 +65,5 @@ uv run --no-project python tests/smoke_wheel.py dist/*.whl
 
 ## Universal safety
 
-- Never deploy or run the Modal pipeline, and never write to a CyteBase bucket. Deployment
-  (`uv run python -m cytebase.pipeline.deploy`) and publication are user actions. Ask before any
-  paid or long-running cloud job.
-- Do not publish datasets, catalogs, or releases, or use write credentials, unless the user
-  explicitly requests it.
+- Never run the Modal pipeline, and never write to a CyteBase bucket. Deployment
+  (`uv run python -m cytebase.pipeline.deploy`) is a user action.

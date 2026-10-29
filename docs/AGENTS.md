@@ -46,8 +46,7 @@ rendered site files outside Git.
 
 ## Execute affected pages on Modal
 
-Ask before paid or long-running cloud work unless the current request already authorizes it.
-Use an ephemeral app; never deploy. Select the environment explicitly:
+Select the environment explicitly:
 
 ```bash
 make -C docs execute-docs-modal PAGES="cytebase cytebase_covid19" MODAL_ENVIRONMENT=your_environment
